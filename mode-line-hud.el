@@ -2,6 +2,9 @@
 ;;; Commentary:
 ;; Package for interacting with mood-line.
 ;;; Code:
+
+(require 'cl-lib)
+
 (defgroup mode-line-hud nil
   "Mode-line hud."
   :tag "mode-line-hud"
