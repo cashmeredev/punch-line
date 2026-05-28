@@ -1,68 +1,85 @@
-;;; punch-line-term.el --- A customized mode-line for Emacs with modal status and advanced customizations -*- lexical-binding: t; -*-
+;;; punch-line-term.el --- Terminal indicator for punch-line -*- lexical-binding: t; -*-
 
-;; Author: Mikael Konradsson
-;; Version: 1.0
-;; Package-Requires: ((emacs "28.1"))
+;; Author: Mikael Konradsson, cashmere
+;; Version: 1.1
+;; Package-Requires: ((emacs "29.1"))
 
 ;;; Commentary:
-;; This package offers a customized mode-line for Emacs with Modal status,
-;; configurable colors, and the ability to customize displayed information.
+;; Shows a terminal indicator in the mode-line when one or more terminal
+;; buffers (vterm, eat, ansi-term, shell, eshell, multi-vterm) are alive
+;; but currently hidden. Optionally surfaces the last command run.
 
 ;;; Code:
 
-(require 'nerd-icons)
+(require 'cl-lib)
+(require 'punch-line-glyphs)
+(require 'nerd-icons nil t)
 
 (defface punch-term-face
   '((t (:inherit font-lock-variable-name-face)))
   "Face for the terminal icon in the punch line."
   :group 'punch-line)
 
-(defcustom punch-show-term-info t
-  "Flag to indicate if the terminal is hidden."
+(defcustom punch-show-term-info nil
+  "If non-nil, show a hidden-terminal indicator in the mode-line."
   :type 'boolean
   :group 'punch-line)
 
-(defvar punch-term-process-name nil
-  "Name of the current process running in the terminal.")
+(defcustom punch-term-buffer-pattern
+  "\\`\\*\\(vterm\\|eat\\|terminal\\|shell\\|eshell\\|ansi-term\\)"
+  "Regexp matching buffer names that count as terminals."
+  :type 'regexp
+  :group 'punch-line)
 
-(defun vterm-buffer-is-running ()
-  "Check if *vterm* buffer is running."
-  (get-buffer "*vterm*"))
+(defcustom punch-term-show-last-command t
+  "If non-nil, append the last command run in the most-recent terminal."
+  :type 'boolean
+  :group 'punch-line)
 
-(defun vterm-visible-p ()
-  "Check if *vterm* buffer is visible."
-  (let ((vterm-buffer (get-buffer "*vterm*")))
-    (and vterm-buffer
-         (get-buffer-window vterm-buffer 'visible))))
+(defun punch-term--all-terminals ()
+  "List live terminal buffers matching `punch-term-buffer-pattern'."
+  (cl-loop for buf in (buffer-list)
+           when (string-match-p punch-term-buffer-pattern (buffer-name buf))
+           collect buf))
 
-(defun punch-vterm-last-command ()
-  "Return the last command executed in the vterm buffer, avoiding navigation commands."
-  (let ((buffer (get-buffer "*vterm*")))
-    (when (and buffer (with-current-buffer buffer (derived-mode-p 'vterm-mode)))
-      (with-current-buffer buffer
+(defun punch-term--any-visible-p (buffers)
+  "Return non-nil if any of BUFFERS is currently visible in a window."
+  (cl-some (lambda (b) (get-buffer-window b 'visible)) buffers))
+
+(defun punch-term--last-command (buffer)
+  "Best-effort: return the last shell command in BUFFER.
+Heuristic matches starship-like prompt markers; returns nil on miss."
+  (when (and buffer (buffer-live-p buffer))
+    (with-current-buffer buffer
+      (when (derived-mode-p 'vterm-mode 'term-mode 'eat-mode)
         (save-excursion
           (goto-char (point-max))
-          (let ((case-fold-search nil)  ; Make search case-sensitive
-                (limit (max (point-min) (- (point-max) 3000))))  ; Limit the search to the last 3000 characters
+          (let ((case-fold-search nil)
+                (limit (max (point-min) (- (point-max) 3000))))
             (catch 'result
-  (while (re-search-backward " [↱±]\\s-+\\(.+\\)$" limit t)
-                (let* ((full-command (string-trim (match-string-no-properties 1)))
-                       (cleaned-command (replace-regexp-in-string "[^a-zA-Z ]" "" full-command))
-                       (first-word (car (split-string cleaned-command))))
-                  ;; Skip navigation commands
-                  (if (and first-word (not (member first-word '("cd" "ls" "pwd"))))
-                      (throw 'result (car (split-string cleaned-command)))
-                    (message "Skipped command: %s" first-word)))))))))))
+              (while (re-search-backward " [↱±]\\s-+\\(.+\\)$" limit t)
+                (let* ((full (string-trim (match-string-no-properties 1)))
+                       (cleaned (replace-regexp-in-string "[^a-zA-Z ]" "" full))
+                       (first (car (split-string cleaned))))
+                  (when (and first
+                             (not (member first '("cd" "ls" "pwd"))))
+                    (throw 'result first)))))))))))
 
 (defun punch-term-info ()
-  "Return the terminal icon for the mode-line."
-  (when (and (vterm-buffer-is-running) (not (vterm-visible-p)))
-    (let ((last-command (punch-vterm-last-command)))
-      (propertize
-       (if last-command
-           (format "%s %s" (nerd-icons-devicon "nf-dev-terminal") last-command)
-         (nerd-icons-devicon "nf-dev-terminal"))
-       'face 'punch-term-face))))
+  "Mode-line segment: terminal indicator when terminals are hidden."
+  (when punch-show-term-info
+    (let* ((terms (punch-term--all-terminals)))
+      (when (and terms (not (punch-term--any-visible-p terms)))
+        (let* ((icon (punch-line-glyph 'terminal))
+               (count (length terms))
+               (last-cmd (and punch-term-show-last-command
+                              (punch-term--last-command (car terms))))
+               (text (cond
+                      ((and (= count 1) last-cmd) (format "%s %s" icon last-cmd))
+                      ((= count 1) icon)
+                      (last-cmd (format "%s %d (%s)" icon count last-cmd))
+                      (t (format "%s %d" icon count)))))
+          (propertize text 'face 'punch-term-face))))))
 
 (provide 'punch-line-term)
 ;;; punch-line-term.el ends here

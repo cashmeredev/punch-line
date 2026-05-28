@@ -15,7 +15,8 @@
 (require 'package)
 (require 'cl-lib)
 (require 'async)
-(require 'nerd-icons)
+(require 'punch-line-glyphs)
+(require 'nerd-icons nil t)
 
 (defface punch-line-package-update-face
   '((t :inherit mode-line-emphasis))
@@ -91,7 +92,7 @@
   (when punch-show-package-info
     (let ((updates (punch-package-upgradable-packages)))
       (if (and (numberp updates) (> updates 0))
-          (propertize (format "%s %d" (nerd-icons-codicon "nf-cod-package") updates)
+          (propertize (format "%s %d" (punch-line-glyph 'package) updates)
                       'face 'punch-line-package-update-face)
         ""))))
 

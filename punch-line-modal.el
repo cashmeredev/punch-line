@@ -10,8 +10,9 @@
 
 ;;; Code:
 
-(require 'nerd-icons)
 (require 'punch-line-colors)
+(require 'punch-line-glyphs)
+(require 'nerd-icons nil t)
 
 (defvar punch-line-height 1
   "Height of the mode-line.")
@@ -226,7 +227,7 @@ Respects `punch-line-coloring-style':
   "Show Evil MC information if available."
   (when (featurep 'evil-mc-vars)
     (let ((cursor-count (evil-mc-get-cursor-count))
-          (icon (nerd-icons-octicon "nf-oct-pencil")))
+          (icon (punch-line-glyph 'pencil)))
       (if (> cursor-count 1)
           (propertize (format " %s %d " icon cursor-count)
                       'face '(:inherit punch-line-evil-replace-face))
@@ -238,7 +239,7 @@ Respects `punch-line-coloring-style':
     (let ((occurrence-count (or (and (boundp 'iedit-occurrences-overlays)
                                      (length iedit-occurrences-overlays))
                                 0))
-          (icon (nerd-icons-octicon "nf-oct-pencil")))
+          (icon (punch-line-glyph 'pencil)))
       (if (> occurrence-count 0)
           (propertize (format " %s %d " icon occurrence-count)
                       'face '(:inherit punch-line-evil-replace-face))

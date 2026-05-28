@@ -103,13 +103,13 @@ Handles macOS system colors and invalid color names gracefully."
   :group 'punch-line)
 
 (defface punch-line-macro-face
-  `((t :foreground "#333333" :background "#B0C4DE" :weight bold))
-  "Face for Emacs state."
+  '((t :inherit mode-line-highlight :weight bold))
+  "Face for the macro indicator when a macro has been recorded."
   :group 'punch-line)
 
 (defface punch-line-macro-recording-face
-  `((t :foreground "#222233" :background "#FF5D62" :weight bold))
-  "Face for Emacs state."
+  '((t :inherit error :weight bold))
+  "Face for the macro indicator while recording is in progress."
   :group 'punch-line)
 
 (defface punch-line-meow-motion-face

@@ -12,7 +12,8 @@
 
 (require 'vc)
 (require 'vc-git)
-(require 'nerd-icons)
+(require 'punch-line-glyphs)
+(require 'nerd-icons nil t)
 
 (defvar-local punch-git-info-cache nil
   "Cache for Git information.")
@@ -78,8 +79,8 @@
 (defun punch-git-icon ()
   "Return the Git icon."
   (if punch-line-vc-use-github-icon
-      (nerd-icons-octicon "nf-oct-mark_github")
-    (nerd-icons-octicon "nf-oct-git_branch")))
+      (punch-line-glyph 'github)
+    (punch-line-glyph 'git-branch)))
 
 (defvar-local punch-git-file-name nil
   "Cache for the file name used in Git info calculation.")

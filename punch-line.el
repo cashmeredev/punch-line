@@ -15,6 +15,7 @@
 ;;; Code:
 (require 'cl-lib)
 
+(require 'punch-line-glyphs)
 (require 'punch-line-colors)
 (require 'punch-line-vc)
 (require 'punch-line-macro)
@@ -27,6 +28,8 @@
 (require 'punch-line-systemmonitor)
 (require 'punch-line-package)
 (require 'punch-line-what-am-i-doing)
+(require 'punch-line-org-clock)
+(require 'punch-line-erc)
 
 (require 'mode-line-hud)
 
@@ -184,15 +187,25 @@ Edge sections (modal, time) also get :box for consistent mode-line height."
           (punch-line-wrap-with-background str section-name visible-index is-left-side)
         str))))
 
+(defun punch-line--bg-supported-p ()
+  "Section backgrounds are visually noisy on low-color TTYs.
+Return non-nil only when the current display can show them cleanly."
+  (or (display-graphic-p)
+      (>= (display-color-cells) 256)))
+
+(defun punch-line--use-backgrounds-p ()
+  "Combine `punch-line-section-backgrounds' with display capability."
+  (and punch-line-section-backgrounds (punch-line--bg-supported-p)))
+
 (defun punch-line-maybe-wrap-background (str section-name visible-sections is-left-side)
   "Conditionally wrap STR with background if backgrounds are enabled."
-  (if punch-line-section-backgrounds
+  (if (punch-line--use-backgrounds-p)
       (punch-line-wrap-with-background-visible str section-name visible-sections is-left-side)
     str))
 
 (defun punch-line-get-section-background (section-name visible-sections is-left-side)
   "Get the background color for a section without wrapping the string."
-  (if punch-line-section-backgrounds
+  (if (punch-line--use-backgrounds-p)
       (let* ((section-names (mapcar #'car visible-sections))
              (visible-index (cl-position section-name section-names)))
         (if visible-index
@@ -220,7 +233,7 @@ to use for the separator. BACKGROUND applies background color to separator."
 
 (defun punch-line-format-left ()
   "Create the left section of the mode-line with caching."
-   (if punch-line-section-backgrounds
+   (if (punch-line--use-backgrounds-p)
       ;; Background mode - use visible sections logic
       (let* ((modal-str (punch-evil-status))
              (sections (list
@@ -275,7 +288,7 @@ to use for the separator. BACKGROUND applies background color to separator."
 
 (defun punch-line-format-right ()
   "Create the right section of the mode-line with caching."
-   (if punch-line-section-backgrounds
+   (if (punch-line--use-backgrounds-p)
       ;; Background mode - use visible sections logic
       (let* ((time-str (punch-time-info))
              (sections (list
@@ -285,6 +298,8 @@ to use for the separator. BACKGROUND applies background color to separator."
                        (cons 'position (punch-buffer-position))
                        (cons 'copilot (punch-copilot-info))
                        (cons 'term (punch-term-info))
+                       (cons 'org-clock (punch-org-clock-info))
+                       (cons 'erc (punch-erc-info))
                        (cons 'misc (punch-misc-info))
                        (cons 'git (punch-git-info))
                        (cons 'weather (punch-weather-info))
@@ -317,12 +332,20 @@ to use for the separator. BACKGROUND applies background color to separator."
           :str (punch-line-wrap-with-background-visible (punch-copilot-info) 'copilot reversed-sections nil) 
           :separator punch-line-right-separator :leftside t
           :background (punch-line-get-section-background 'copilot reversed-sections nil))
-         (punch-line-add-separator 
-          :str (punch-line-wrap-with-background-visible (punch-term-info) 'term reversed-sections nil) 
+         (punch-line-add-separator
+          :str (punch-line-wrap-with-background-visible (punch-term-info) 'term reversed-sections nil)
           :separator punch-line-right-separator :leftside t
           :background (punch-line-get-section-background 'term reversed-sections nil))
-         (punch-line-add-separator 
-          :str (punch-line-wrap-with-background-visible (punch-misc-info) 'misc reversed-sections nil) 
+         (punch-line-add-separator
+          :str (punch-line-wrap-with-background-visible (punch-org-clock-info) 'org-clock reversed-sections nil)
+          :separator punch-line-right-separator :leftside t
+          :background (punch-line-get-section-background 'org-clock reversed-sections nil))
+         (punch-line-add-separator
+          :str (punch-line-wrap-with-background-visible (punch-erc-info) 'erc reversed-sections nil)
+          :separator punch-line-right-separator :leftside t
+          :background (punch-line-get-section-background 'erc reversed-sections nil))
+         (punch-line-add-separator
+          :str (punch-line-wrap-with-background-visible (punch-misc-info) 'misc reversed-sections nil)
           :separator punch-line-right-separator :leftside t
           :background (punch-line-get-section-background 'misc reversed-sections nil))
          (punch-line-add-separator 
@@ -346,6 +369,8 @@ to use for the separator. BACKGROUND applies background color to separator."
      (punch-line-add-separator :str (punch-buffer-position) :separator punch-line-right-separator :leftside t)
      (punch-line-add-separator :str (punch-copilot-info) :separator punch-line-right-separator :leftside t)
      (punch-line-add-separator :str (punch-term-info) :separator punch-line-right-separator :leftside t)
+     (punch-line-add-separator :str (punch-org-clock-info) :separator punch-line-right-separator :leftside t)
+     (punch-line-add-separator :str (punch-erc-info) :separator punch-line-right-separator :leftside t)
      (punch-line-add-separator :str (punch-misc-info) :separator punch-line-right-separator :leftside t)
      (punch-line-add-separator :str (punch-git-info) :separator punch-line-right-separator :leftside t)
      (punch-line-add-separator :str (punch-weather-info) :separator punch-line-right-separator :leftside t)
@@ -362,7 +387,10 @@ to use for the separator. BACKGROUND applies background color to separator."
                        "#000000"))
          (base-face `(:inherit punch-line-inactive-face
                                :box (:line-width ,height-adjust :color ,bg-color)))
-         (icon (when file-name
+         (icon (when (and file-name
+                          (featurep 'nerd-icons)
+                          (display-graphic-p)
+                          (eq (punch-line-glyph--style-for-frame) 'nerd))
                  (propertize (nerd-icons-icon-for-file file-name)
                              'face base-face)))
          (buffer-name (file-name-sans-extension

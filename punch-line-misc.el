@@ -10,11 +10,12 @@
 ;;; Code:
 
 (require 'project)
-(require 'nerd-icons)
 (require 'punch-line-colors)
+(require 'punch-line-glyphs)
 
-(require 'eglot    nil t)
-(require 'flycheck nil t)
+(require 'nerd-icons nil t)
+(require 'eglot     nil t)
+(require 'flycheck  nil t)
 (require 'projectile nil t)
 
 (defvar-local punch-flycheck-cache nil
@@ -106,13 +107,13 @@
            (warning (or (cdr (assq 'warning count)) 0))
            (error (or (cdr (assq 'error count)) 0))
            (info-str (when (> info 0)
-                      (propertize (format "%s %d" (nerd-icons-codicon "nf-cod-lightbulb") info)
+                      (propertize (format "%s %d" (punch-line-glyph 'info) info)
                                 'face '(:inherit success))))
            (warning-str (when (> warning 0)
-                         (propertize (format "%s %d" (nerd-icons-codicon "nf-cod-warning") warning)
+                         (propertize (format "%s %d" (punch-line-glyph 'warning) warning)
                                    'face '(:inherit warning))))
            (error-str (when (> error 0)
-                       (propertize (format "%s %d" (nerd-icons-codicon "nf-cod-error") error)
+                       (propertize (format "%s %d" (punch-line-glyph 'error) error)
                                  'face '(:inherit error)))))
       (string-join
        (remove nil
@@ -159,13 +160,13 @@
     (cond
      ((bound-and-true-p eglot--managed-mode)
       (let* ((server (eglot-current-server))
-             (icon (propertize (nerd-icons-codicon "nf-cod-pulse")
+             (icon (propertize (punch-line-glyph 'pulse)
                                'face 'punch-line-lsp-icon-face)))
         (if server
             icon
           "")))
      ((bound-and-true-p lsp-mode)
-      (let ((icon (propertize (nerd-icons-codicon "nf-cod-pulse")
+      (let ((icon (propertize (punch-line-glyph 'pulse)
                               'face 'punch-line-lsp-icon-face)))
         (if (lsp-workspaces)
             icon
@@ -206,7 +207,10 @@
 (defun punch-buffer-name ()
   "Show buffer name with custom face and icon (if available)."
   (let* ((file-name (buffer-file-name))
-         (icon (when file-name
+         (icon (when (and file-name
+                          (featurep 'nerd-icons)
+                          (display-graphic-p)
+                          (eq (punch-line-glyph--style-for-frame) 'nerd))
                  (nerd-icons-icon-for-file file-name t)))
          (buffer-name (file-name-sans-extension
                        (substring-no-properties (format-mode-line "%b ")))))
