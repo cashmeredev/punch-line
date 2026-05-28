@@ -10,8 +10,9 @@
 
 ;;; Code:
 
-(require 'nerd-icons)
 (require 'punch-line-colors)
+(require 'punch-line-glyphs)
+(require 'nerd-icons nil t)
 
 (defcustom punch-show-system-monitor nil
   "Whether to show system monitor information in the mode-line."
@@ -74,13 +75,13 @@
     (setq punch-system-monitor-last-update (float-time))
     (format "%s %s  %s %s"
             (if punch-system-monitor-use-icons
-                (nerd-icons-octicon "nf-oct-cpu")
+                (punch-line-glyph 'cpu)
               "CPU:")
             (propertize
              (if punch-cpu-usage (format "%.1f%%" (string-to-number punch-cpu-usage)) "N/A")
              'face 'punch-line-system-monitor-cpu-face)
             (if punch-system-monitor-use-icons
-                (concat (nerd-icons-faicon "nf-fa-memory") " ")
+                (concat (punch-line-glyph 'memory) " ")
               "MEM:")
             (propertize
              (if punch-memory-usage (format "%.1f GB" (/ punch-memory-usage 1024)) "N/A")

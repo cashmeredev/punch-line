@@ -49,10 +49,17 @@
       (setq info "")))
     info))
 
-(when (bound-and-true-p punch-show-macro)
+(defun punch-macro-register-hooks ()
+  "Wire kmacro counter hooks. Called by `punch-line-mode'."
   (add-hook 'kmacro-start-hook #'punch-macro-start-hook)
   (add-hook 'kmacro-end-hook #'punch-macro-end-hook)
   (add-hook 'kmacro-exec-hook #'punch-macro-exec-hook))
+
+(defun punch-macro-unregister-hooks ()
+  "Unwire kmacro counter hooks. Called by `punch-line-mode'."
+  (remove-hook 'kmacro-start-hook #'punch-macro-start-hook)
+  (remove-hook 'kmacro-end-hook #'punch-macro-end-hook)
+  (remove-hook 'kmacro-exec-hook #'punch-macro-exec-hook))
 
 (provide 'punch-line-macro)
 ;;; punch-line-macro.el ends here

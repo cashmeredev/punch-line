@@ -10,9 +10,10 @@
 
 ;;; Code:
 
-(require 'cl-lib)  ; Add required dependency
-(require 'nerd-icons)  ; Add required dependency
-(require 'punch-line-colors)  ; Add required dependency
+(require 'cl-lib)
+(require 'punch-line-colors)
+(require 'punch-line-glyphs)
+(require 'nerd-icons nil t)
 
 (defcustom punch-show-what-am-i-doing-info t
   "If set to t, show what-am-i-doing information."
@@ -131,7 +132,7 @@
                                             task-count)
                                     'face 'punch-line-what-am-i-doing-count-face)
                         "")))
-      (concat (propertize (nerd-icons-faicon "nf-fa-gripfire") 'face 'mode-line-highlight)
+      (concat (propertize (punch-line-glyph 'fire) 'face 'mode-line-highlight)
           " "
           (propertize current-task 'face 'punch-line-what-am-i-doing-face)
           count-info))))

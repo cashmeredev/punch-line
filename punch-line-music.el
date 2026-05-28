@@ -9,7 +9,8 @@
 ;;; Code:
 
 (require 'subr-x)  ; for string-trim
-(require 'nerd-icons)
+(require 'punch-line-glyphs)
+(require 'nerd-icons nil t)
 
 (defgroup punch-line nil
   "Customization group for punch-line."
@@ -58,10 +59,11 @@ If a plist, it can contain the following properties:
       (when buffer
         (kill-buffer buffer)))))
 
-(defun punch-line-music-info-command (service)
-  "Return the AppleScript command to get music info for SERVICE ('apple or 'spotify)."
+(defun punch-line-music--osascript (service)
+  "AppleScript command list for SERVICE (\\='apple or \\='spotify) on macOS."
   (let ((app-name (if (eq service 'apple) "Music" "Spotify")))
-    (format "
+    (list "osascript" "-e"
+          (format "
 tell application \"System Events\"
   if exists process \"%s\" then
     tell application \"%s\"
@@ -76,17 +78,40 @@ tell application \"System Events\"
   else
     return \"\"
   end if
-end tell" app-name app-name)))
+end tell" app-name app-name))))
+
+(defun punch-line-music--playerctl (_service)
+  "playerctl command on Linux. Returns nil if playerctl is missing."
+  (when (executable-find "playerctl")
+    (list "sh" "-c"
+          "test \"$(playerctl status 2>/dev/null)\" = \"Playing\" && \
+playerctl metadata --format '{{title}} • {{artist}}' 2>/dev/null")))
+
+(defun punch-line-music--default-service ()
+  "Best-guess default music service for the current platform."
+  (pcase system-type
+    ('darwin    'apple)
+    ('gnu/linux 'playerctl)
+    (_          nil)))
 
 (defun punch-line-get-music-service ()
-  "Get the configured music service or default to apple."
+  "Get the configured music service.
+Resolves `punch-line-music-info' against platform defaults."
   (cond
    ((null punch-line-music-info) nil)
-   ((eq punch-line-music-info t) 'apple)
+   ((eq punch-line-music-info t) (punch-line-music--default-service))
    ((and (plist-member punch-line-music-info :service)
-         (memq (plist-get punch-line-music-info :service) '(apple spotify)))
+         (memq (plist-get punch-line-music-info :service)
+               '(apple spotify playerctl)))
     (plist-get punch-line-music-info :service))
-   (t 'apple)))
+   (t (punch-line-music--default-service))))
+
+(defun punch-line-music--command (service)
+  "Return command list (PROGRAM . ARGS) for SERVICE, or nil if unsupported."
+  (pcase service
+    ((or 'apple 'spotify) (punch-line-music--osascript service))
+    ('playerctl           (punch-line-music--playerctl service))
+    (_                    nil)))
 
 (defun punch-line-update-music-info-async ()
   "Update the cached music info asynchronously with timeout handling."
@@ -101,11 +126,14 @@ end tell" app-name app-name)))
       (punch-line-cleanup-stale-process)
       (condition-case err
           (let* ((buffer-name "*punch-line-music-info*")
-                 (process
-                  (start-process "punch-line-music-info"
-                               buffer-name
-                               "osascript"
-                               "-e" (punch-line-music-info-command service))))
+                 (cmd (punch-line-music--command service))
+                 (process (and cmd (apply #'start-process
+                                          "punch-line-music-info"
+                                          buffer-name
+                                          cmd))))
+        (unless process
+          (setq punch-music-info-cache "")
+          (signal 'user-error '("punch-line-music: no command for service")))
         ;; Set process timeout with proper closure
         (run-with-timer punch-line-process-timeout nil
                        (lambda (proc)
@@ -160,9 +188,10 @@ end tell" app-name app-name)))
   "Return the icon for the music service."
   (let ((service (punch-line-get-music-service)))
     (cond
-     ((eq service 'apple) (propertize (nerd-icons-faicon "nf-fa-music") 'face 'punch-line-music-apple-face))
-     ((eq service 'spotify) (propertize (nerd-icons-faicon "nf-fa-spotify") 'face 'punch-line-music-spotify-face))
-     (t ))))
+     ((eq service 'apple)     (propertize (punch-line-glyph 'music)   'face 'punch-line-music-apple-face))
+     ((eq service 'spotify)   (propertize (punch-line-glyph 'spotify) 'face 'punch-line-music-spotify-face))
+     ((eq service 'playerctl) (propertize (punch-line-glyph 'music)   'face 'punch-line-music-face))
+     (t ""))))
 
 (defun punch-line-start-music-info-timer ()
   "Start the timer for updating music information."
@@ -186,9 +215,7 @@ end tell" app-name app-name)))
   (when (and punch-line-music-info (punch-line-get-music-service))
     (punch-line-get-music-info)))
 
-(when (eq system-type 'darwin)
-  (add-hook 'emacs-startup-hook #'punch-line-start-music-info-timer)
-  (add-hook 'kill-emacs-hook #'punch-line-stop-music-info-timer))
+(add-hook 'kill-emacs-hook #'punch-line-stop-music-info-timer)
 
 (provide 'punch-line-music)
 ;;; punch-line-music.el ends here

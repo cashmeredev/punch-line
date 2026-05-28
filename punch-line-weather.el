@@ -12,7 +12,8 @@
 
 (require 'url)
 (require 'json)
-(require 'nerd-icons)
+(require 'punch-line-glyphs)
+(require 'nerd-icons nil t)
 
 (defgroup punch-weather nil
   "Customization group for punch-line-weather."
@@ -93,18 +94,18 @@
   "Return a nerd-icon based on the weather CODE."
   (condition-case nil
       (cond
-       ((member code '(0 1)) (nerd-icons-mdicon "nf-md-weather_sunny" :v-adjust 0.1))           ; Clear sky
-       ((member code '(2 3)) (nerd-icons-mdicon "nf-md-weather_partly_cloudy" :v-adjust 0.1))   ; Partly cloudy
-       ((member code '(45 48)) (nerd-icons-mdicon "nf-md-weather_fog" :v-adjust 0.1))           ; Fog
-       ((member code '(51 53 55)) (nerd-icons-mdicon "nf-md-weather_rainy" :v-adjust 0.1))      ; Drizzle
-       ((member code '(61 63 65)) (nerd-icons-mdicon "nf-md-weather_pouring" :v-adjust 0.1))    ; Rain
-       ((member code '(71 73 75)) (nerd-icons-mdicon "nf-md-weather_snowy" :v-adjust 0.1))      ; Snow
-       ((member code '(77)) (nerd-icons-mdicon "nf-md-weather_snowy_heavy" :v-adjust 0.1))      ; Snow grains
-       ((member code '(80 81 82)) (nerd-icons-mdicon "nf-md-weather_pouring" :v-adjust 0.1))    ; Rain showers
-       ((member code '(85 86)) (nerd-icons-mdicon "nf-md-weather_snowy_heavy" :v-adjust 0.1))   ; Snow showers
-       ((member code '(95 96 99)) (nerd-icons-mdicon "nf-md-weather_lightning" :v-adjust 0.1))  ; Thunderstorm
-       (t (nerd-icons-mdicon "nf-md-weather_cloudy" :v-adjust 0.1)))                           ; Default
-    (error "?")))  ; Fallback to simple string if nerd-icons fails
+       ((member code '(0 1))      (punch-line-glyph 'w-sunny      :v-adjust 0.1))
+       ((member code '(2 3))      (punch-line-glyph 'w-partly     :v-adjust 0.1))
+       ((member code '(45 48))    (punch-line-glyph 'w-fog        :v-adjust 0.1))
+       ((member code '(51 53 55)) (punch-line-glyph 'w-drizzle    :v-adjust 0.1))
+       ((member code '(61 63 65)) (punch-line-glyph 'w-rain       :v-adjust 0.1))
+       ((member code '(71 73 75)) (punch-line-glyph 'w-snow       :v-adjust 0.1))
+       ((member code '(77))       (punch-line-glyph 'w-snow-heavy :v-adjust 0.1))
+       ((member code '(80 81 82)) (punch-line-glyph 'w-rain       :v-adjust 0.1))
+       ((member code '(85 86))    (punch-line-glyph 'w-snow-heavy :v-adjust 0.1))
+       ((member code '(95 96 99)) (punch-line-glyph 'w-thunder    :v-adjust 0.1))
+       (t                         (punch-line-glyph 'w-cloudy     :v-adjust 0.1)))
+    (error "?")))
 
 (defun punch-weather--description-from-code (code)
   "Return a weather description based on the CODE."
@@ -409,11 +410,8 @@ Cleans up stale buffers/processes and schedules a fresh update."
   (remove-hook 'focus-out-hook #'punch-weather--on-focus-out)
   (remove-hook 'focus-in-hook #'punch-weather--on-focus-in))
 
-;; Automatically enable focus hooks when this module is loaded
-(punch-weather-enable-focus-hooks)
-
-;; Note: The update cycle should be started manually via `punch-weather-update`
-;; or through a hook (e.g., after-init-hook) to avoid duplicate initialization.
+;; Focus hooks enable/disable is wired into `punch-line-mode' rather than
+;; firing at load time, so requiring this file has no side effects.
 
 (provide 'punch-line-weather)
 ;;; punch-line-weather.el ends here
