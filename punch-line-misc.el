@@ -9,17 +9,19 @@
 ;; configurable colors, and the ability to customize displayed information.
 ;;; Code:
 
-(require 'eglot)
-(require 'flycheck)
-(require 'nerd-icons)
 (require 'project)
+(require 'nerd-icons)
 (require 'punch-line-colors)
 
-(when (featurep 'projectile)
-  (require 'projectile))
+(require 'eglot    nil t)
+(require 'flycheck nil t)
+(require 'projectile nil t)
 
 (defvar-local punch-flycheck-cache nil
   "Cache for flycheck information.")
+
+(defvar-local punch-flycheck-cache-time nil
+  "Timestamp of the last flycheck cache update.")
 
 (defvar-local punch-flycheck-cache-timer nil
   "Timer for clearing flycheck cache.")

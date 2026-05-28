@@ -409,11 +409,8 @@ Cleans up stale buffers/processes and schedules a fresh update."
   (remove-hook 'focus-out-hook #'punch-weather--on-focus-out)
   (remove-hook 'focus-in-hook #'punch-weather--on-focus-in))
 
-;; Automatically enable focus hooks when this module is loaded
-(punch-weather-enable-focus-hooks)
-
-;; Note: The update cycle should be started manually via `punch-weather-update`
-;; or through a hook (e.g., after-init-hook) to avoid duplicate initialization.
+;; Focus hooks enable/disable is wired into `punch-line-mode' rather than
+;; firing at load time, so requiring this file has no side effects.
 
 (provide 'punch-line-weather)
 ;;; punch-line-weather.el ends here

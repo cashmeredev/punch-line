@@ -186,9 +186,7 @@ end tell" app-name app-name)))
   (when (and punch-line-music-info (punch-line-get-music-service))
     (punch-line-get-music-info)))
 
-(when (eq system-type 'darwin)
-  (add-hook 'emacs-startup-hook #'punch-line-start-music-info-timer)
-  (add-hook 'kill-emacs-hook #'punch-line-stop-music-info-timer))
+(add-hook 'kill-emacs-hook #'punch-line-stop-music-info-timer)
 
 (provide 'punch-line-music)
 ;;; punch-line-music.el ends here
