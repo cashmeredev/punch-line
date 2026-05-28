@@ -13,9 +13,6 @@
 (require 'battery)
 (require 'nerd-icons)
 
-(unless (bound-and-true-p battery-status-function)
-  (battery-update-handler))
-
 (defgroup punch-battery nil
   "Customization group for punch-line-battery."
   :group 'punch-line)
