@@ -34,7 +34,7 @@
   :group 'punch-line)
 
 (defvar punch-battery-info-cache 'unset
-  "Cache for Battery information.
+  "Cache for Battery information.")
 
 (defvar punch-battery-info-cache-time 0
   "Time of last cache update.")
