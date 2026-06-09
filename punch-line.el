@@ -74,9 +74,6 @@ Typical values are 0-3; larger values will make sections very wide."
 (defvar punch-line--update-timer nil
   "Timer for debouncing mode-line updates.")
 
-(defvar punch-line--updating nil
-  "Re-entrancy guard: non-nil while a forced mode-line update is in flight.")
-
 (defvar punch-line--last-update 0
   "Timestamp of last mode-line update.")
 
@@ -412,28 +409,20 @@ to use for the separator. BACKGROUND applies background color to separator."
 
 (defun punch-line-update (&optional force)
   "Update mode-line for all windows.
-If FORCE is non-nil, bypass the update interval check.
-
-The active window is tracked synchronously so the mode-line is always
-rendered for the right window, while the (expensive) redisplay is debounced
-on an idle timer.  `punch-line--updating' guards against re-entry: the idle
-timer's `force-mode-line-update' can fire window/redisplay hooks that call
-this function again, which would otherwise drive a redisplay feedback loop."
-  (unless punch-line--updating
-    (setq punch-line-active-window (selected-window))
-    (let ((current-time (float-time)))
-      (when (or force
-                (> (- current-time punch-line--last-update)
-                   punch-line-min-update-interval))
-        (setq punch-line--last-update current-time)
-        (when punch-line--update-timer
-          (cancel-timer punch-line--update-timer))
-        (setq punch-line--update-timer
-              (run-with-idle-timer
-               0.05 nil
-               (lambda ()
-                 (let ((punch-line--updating t))
-                   (force-mode-line-update t)))))))))
+If FORCE is non-nil, bypass the update interval check."
+  (let ((current-time (float-time)))
+    (when (or force
+              (> (- current-time punch-line--last-update)
+                 punch-line-min-update-interval))
+      (when punch-line--update-timer
+        (cancel-timer punch-line--update-timer))
+      (setq punch-line--update-timer
+            (run-with-idle-timer
+             0.05 nil
+             (lambda ()
+               (setq punch-line--last-update current-time
+                     punch-line-active-window (selected-window))
+               (force-mode-line-update t)))))))
 
 (defun punch-line-set-mode-line ()
   "Set the mode-line format for punch-line."
