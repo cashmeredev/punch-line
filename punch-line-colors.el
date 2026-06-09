@@ -47,7 +47,7 @@ Additional face attributes (WEIGHT, SLANT, etc.) can be specified."
   "Memoization cache for `adjust-color', keyed on (COLOR . PERCENT).")
 
 (defun adjust-color (color percent)
-  "Adjust COLOR by PERCENT (-100 to 100).
+  "Adjust COLOR by PERCENT (-100 to 100)."
   (if (or (string= color "unspecified")
           (null color))
       (or color "unspecified")
